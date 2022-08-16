@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:get_storage/get_storage.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -21,6 +22,8 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     reqPermission();
   }
+
+  final box = GetStorage();
 
   final myController = Get.find<UserController>();
 
@@ -113,8 +116,17 @@ class _HomePageState extends State<HomePage> {
                     _value = value;
                     if (_value == true) {
                       status = 'on';
+                      FirebaseFirestore.instance
+                          .collection('Drivers')
+                          .doc(box.read('username'))
+                          .update({'status': 'on'});
                     } else {
                       status = 'off';
+
+                      FirebaseFirestore.instance
+                          .collection('Drivers')
+                          .doc(box.read('username'))
+                          .update({'status': 'off'});
                     }
                   });
                 },
@@ -123,13 +135,11 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         body: StreamBuilder<QuerySnapshot>(
-            stream:
-                FirebaseFirestore.instance.collection('Bookings').snapshots(),
-            /*.where('driverUserName',
-                    isEqualTo: 'driver@easyride.cdo.driver')
-                .where('driverPassword', isEqualTo: 'mypassword')
-                */
-
+            stream: FirebaseFirestore.instance
+                .collection('Bookings')
+                .where('driverUserName', isEqualTo: box.read('username'))
+                .where('driverPassword', isEqualTo: box.read('password'))
+                .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 print('error');

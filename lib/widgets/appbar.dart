@@ -9,3 +9,12 @@ PreferredSizeWidget appbar(String title) {
     centerTitle: true,
   );
 }
+
+PreferredSizeWidget appbarSignUp() {
+  return AppBar(
+    automaticallyImplyLeading: true,
+    elevation: 0,
+    backgroundColor: Colors.white,
+    foregroundColor: Colors.black,
+  );
+}

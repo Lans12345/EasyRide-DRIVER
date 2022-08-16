@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_ride_driver/auth/login_page.dart';
 import 'package:easy_ride_driver/pages/emergency_page.dart';
 import 'package:easy_ride_driver/pages/operator_page.dart';
 import 'package:easy_ride_driver/pages/profile_page.dart';
 import 'package:easy_ride_driver/screens/home_page.dart';
 import 'package:easy_ride_driver/widgets/dialog.dart';
 import 'package:easy_ride_driver/widgets/text.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
@@ -35,10 +37,10 @@ class _MyDrawerState extends State<MyDrawer> {
   getData() async {
     // Use provider
     var collection = FirebaseFirestore.instance
-        .collection('Users')
+        .collection('Drivers')
         .where('username', isEqualTo: box.read('username'))
         .where('password', isEqualTo: box.read('password'))
-        .where('type', isEqualTo: 'user');
+        .where('type', isEqualTo: 'driver');
 
     var querySnapshot = await collection.get();
     setState(() {
@@ -61,13 +63,12 @@ class _MyDrawerState extends State<MyDrawer> {
           children: <Widget>[
             UserAccountsDrawerHeader(
               decoration: const BoxDecoration(),
-              accountEmail: textReg('+639090104355', 12, Colors.black),
-              accountName: textBold('Lance Olana', 18, Colors.black),
-              currentAccountPicture: const CircleAvatar(
+              accountEmail: textReg(contactNumber, 12, Colors.black),
+              accountName: textBold(name, 18, Colors.black),
+              currentAccountPicture: CircleAvatar(
                 minRadius: 50,
                 maxRadius: 50,
-                backgroundImage: NetworkImage(
-                    'https://cdn-icons-png.flaticon.com/512/149/149071.png'),
+                backgroundImage: NetworkImage(profilePicture),
               ),
             ),
             ListTile(
@@ -123,7 +124,11 @@ class _MyDrawerState extends State<MyDrawer> {
                 dialogWithClose(
                   'Confirmation',
                   'Are you sure you want to Logout?',
-                  () {},
+                  () {
+                    FirebaseAuth.instance.signOut();
+                    Navigator.of(context).pushReplacement(MaterialPageRoute(
+                        builder: (context) => const LoginPage()));
+                  },
                 );
               },
             ),

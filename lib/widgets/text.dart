@@ -23,3 +23,49 @@ Widget textBold(String txt, double size, Color color) {
     ),
   );
 }
+
+class TextBold extends StatelessWidget {
+  var title = '';
+  double fontSize = 0;
+  late Color color;
+
+  TextBold({
+    required this.color,
+    required this.fontSize,
+    required this.title,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontFamily: 'QBold',
+        fontSize: fontSize,
+        color: color,
+      ),
+    );
+  }
+}
+
+class TextReg extends StatelessWidget {
+  var title = '';
+  double fontSize = 0;
+  late Color color;
+
+  TextReg({
+    required this.color,
+    required this.fontSize,
+    required this.title,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontFamily: 'QRegular',
+        fontSize: fontSize,
+        color: color,
+      ),
+    );
+  }
+}
