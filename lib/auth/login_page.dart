@@ -1,11 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_ride_driver/auth/signup/details_page.dart';
 import 'package:easy_ride_driver/services/authentication/sign_in.dart';
 import 'package:easy_ride_driver/widgets/button.dart';
+import 'package:easy_ride_driver/widgets/error.dart';
 import 'package:easy_ride_driver/widgets/text.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
-import '../services/error.dart';
 import '../widgets/image.dart';
 
 class LoginPage extends StatefulWidget {
@@ -16,6 +18,50 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  @override
+  void initState() {
+    locationNotif();
+    super.initState();
+  }
+
+  Future<Position> locationNotif() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Test if location services are enabled.
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Location services are not enabled don't continue
+      // accessing the position and request users of the
+      // App to enable the location services.
+      return Future.error('Location services are disabled.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        // Permissions are denied, next time you could try
+        // requesting permissions again (this is also where
+        // Android's shouldShowRequestPermissionRationale
+        // returned true. According to Android guidelines
+        // your App should show an explanatory UI now.
+        return Future.error('Location permissions are denied');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      // Permissions are denied forever, handle appropriately.
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permissions.');
+    }
+
+    // When we reach here, permissions are granted and we can
+    // continue accessing the position of the device.
+
+    return await Geolocator.getCurrentPosition();
+  }
+
   final box = GetStorage();
   var username = '';
   var password = '';
@@ -126,13 +172,32 @@ class _LoginPageState extends State<LoginPage> {
                 Button(
                     buttonText: 'Login',
                     onPressed: () async {
-                      bool hasInternet =
-                          await InternetConnectionChecker().hasConnection;
+                      Position position = await Geolocator.getCurrentPosition(
+                          desiredAccuracy: LocationAccuracy.high);
+                      bool serviceEnabled;
 
-                      if (hasInternet == true) {
-                        logIn(username, password);
+                      // Test if location services are enabled.
+                      serviceEnabled =
+                          await Geolocator.isLocationServiceEnabled();
+                      if (!serviceEnabled) {
+                        error2("Please turn on your Phone's Location",
+                            'Caanot Procceed');
                       } else {
-                        error('No Internet Connection');
+                        bool hasInternet =
+                            await InternetConnectionChecker().hasConnection;
+
+                        if (hasInternet == true) {
+                          logIn(username, password);
+                          FirebaseFirestore.instance
+                              .collection('Drivers')
+                              .doc(username + '@easyride.cdo.driver')
+                              .update({
+                            'locationLatitude': position.latitude,
+                            'locationLongitude': position.longitude,
+                          });
+                        } else {
+                          error2("No Internet Connection!", 'Caanot Procceed');
+                        }
                       }
                     })
               ],

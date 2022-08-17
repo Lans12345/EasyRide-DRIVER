@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_ride_driver/auth/login_page.dart';
 import 'package:easy_ride_driver/pages/emergency_page.dart';
 import 'package:easy_ride_driver/pages/operator_page.dart';
+import 'package:easy_ride_driver/pages/payment_page.dart';
 import 'package:easy_ride_driver/pages/profile_page.dart';
 import 'package:easy_ride_driver/screens/home_page.dart';
 import 'package:easy_ride_driver/widgets/dialog.dart';
@@ -85,6 +86,14 @@ class _MyDrawerState extends State<MyDrawer> {
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                     builder: (context) => const ProfilePage()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.payment),
+              title: textBold('Payment', 14, Colors.black),
+              onTap: () {
+                Navigator.of(context).pushReplacement(MaterialPageRoute(
+                    builder: (context) => const PaymentPage()));
               },
             ),
             ListTile(

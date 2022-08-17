@@ -3,15 +3,16 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_ride_driver/controllers/userController.dart';
 import 'package:easy_ride_driver/screens/home_page.dart';
-import 'package:easy_ride_driver/services/error.dart';
+import 'package:easy_ride_driver/widgets/error.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:geolocator/geolocator.dart' as geo;
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:location/location.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'package:get_storage/get_storage.dart';
 import '../../utils/api.dart';
 import '../../widgets/text.dart';
 
@@ -35,6 +36,31 @@ class _BookingMapState extends State<BookingMap> {
     );
     polylines[id] = polyline;
     setState(() {});
+  }
+
+  final box = GetStorage();
+
+  late int bookedRides;
+  late int amountToPay;
+  var vehicleType = '';
+
+  getData() async {
+    // Use provider
+    var collection = FirebaseFirestore.instance
+        .collection('Drivers')
+        .where('username', isEqualTo: box.read('username'))
+        .where('password', isEqualTo: box.read('password'))
+        .where('type', isEqualTo: 'driver');
+
+    var querySnapshot = await collection.get();
+    setState(() {
+      for (var queryDocumentSnapshot in querySnapshot.docs) {
+        Map<String, dynamic> data = queryDocumentSnapshot.data();
+        bookedRides = data['bookedRides'];
+        amountToPay = data['amountToPay'];
+        vehicleType = data['vehicleType'];
+      }
+    });
   }
 
   void _getPolyline(double driverLat, double driverLong, double userLat,
@@ -77,7 +103,7 @@ class _BookingMapState extends State<BookingMap> {
   @override
   void initState() {
     super.initState();
-
+    getData();
     location = Location();
     polylinePoints2 = PolylinePoints();
 
@@ -193,7 +219,7 @@ class _BookingMapState extends State<BookingMap> {
         ],
         width: 4);
 
-    _placeDistance = Geolocator.distanceBetween(
+    _placeDistance = geo.Geolocator.distanceBetween(
         myController.locationLatitude,
         myController.locationLongitude,
         currentLocation!.latitude!,
@@ -409,20 +435,90 @@ class _BookingMapState extends State<BookingMap> {
                                 child: textBold('No', 18, Colors.black),
                               ),
                               FlatButton(
-                                onPressed: () {
-                                  try {
-                                    FirebaseFirestore.instance
-                                        .collection('Bookings')
-                                        .doc(myController.driverUserName.value +
-                                            '-' +
-                                            myController.driverPassword.value)
-                                        .delete();
-                                    Navigator.of(context).pushReplacement(
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const HomePage()));
-                                  } catch (e) {
-                                    error(e.toString());
+                                onPressed: () async {
+                                  geo.Position position =
+                                      await geo.Geolocator.getCurrentPosition(
+                                          desiredAccuracy:
+                                              geo.LocationAccuracy.high);
+
+                                  bool serviceEnabled;
+
+                                  // Test if location services are enabled.
+                                  serviceEnabled = await geo.Geolocator
+                                      .isLocationServiceEnabled();
+
+                                  bool hasInternet =
+                                      await InternetConnectionChecker()
+                                          .hasConnection;
+
+                                  if (!serviceEnabled) {
+                                    error2(
+                                        "Please turn on your Phone's Location",
+                                        'Cannot Procceed');
+                                  } else {
+                                    if (hasInternet == true) {
+                                      try {
+                                        FirebaseFirestore.instance
+                                            .collection('Drivers')
+                                            .doc(box.read('username'))
+                                            .update({
+                                          'locationLatitude': position.latitude,
+                                          'locationLongitude':
+                                              position.longitude,
+                                        });
+                                        FirebaseFirestore.instance
+                                            .collection('Bookings')
+                                            .doc(myController
+                                                    .driverUserName.value +
+                                                '-' +
+                                                myController
+                                                    .driverPassword.value)
+                                            .delete();
+                                        if (vehicleType == 'Taxi') {
+                                          FirebaseFirestore.instance
+                                              .collection('Drivers')
+                                              .doc(box.read('username'))
+                                              .update({
+                                            'bookedRides': bookedRides++,
+                                            'amountToPay': amountToPay + 20,
+                                          });
+                                        } else if (vehicleType ==
+                                            'Habalhabal') {
+                                          FirebaseFirestore.instance
+                                              .collection('Drivers')
+                                              .doc(box.read('username'))
+                                              .update({
+                                            'bookedRides': bookedRides++,
+                                            'amountToPay': amountToPay + 15,
+                                          });
+                                        } else if (vehicleType == 'Jeep') {
+                                          FirebaseFirestore.instance
+                                              .collection('Drivers')
+                                              .doc(box.read('username'))
+                                              .update({
+                                            'bookedRides': bookedRides++,
+                                            'amountToPay': amountToPay + 10,
+                                          });
+                                        } else if (vehicleType == 'Rela') {
+                                          FirebaseFirestore.instance
+                                              .collection('Drivers')
+                                              .doc(box.read('username'))
+                                              .update({
+                                            'bookedRides': bookedRides++,
+                                            'amountToPay': amountToPay + 5,
+                                          });
+                                        }
+                                        Navigator.of(context).pushReplacement(
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const HomePage()));
+                                      } catch (e) {
+                                        error2(e.toString(), 'Cannot Procceed');
+                                      }
+                                    } else {
+                                      error2('No Internet Connection',
+                                          'Cannot Procceed');
+                                    }
                                   }
                                 },
                                 child: textBold('Yes', 18, Colors.black),

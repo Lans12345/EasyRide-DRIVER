@@ -27,6 +27,8 @@ class _HomePageState extends State<HomePage> {
 
   final myController = Get.find<UserController>();
 
+  var myUsername = '';
+
   Future<bool> onWillPop() async {
     final shouldPop = await showDialog(
       context: context,
@@ -40,10 +42,11 @@ class _HomePageState extends State<HomePage> {
           ),
           FlatButton(
             onPressed: () => () {
-              setState(() {
-                status = 'off';
-              });
-              Navigator.of(context).pop(true);
+              FirebaseFirestore.instance
+                  .collection('Drivers')
+                  .doc(box.read('username'))
+                  .update({'status': 'off'});
+              // Navigator.of(context).pop(true);
             },
             child: textBold('Yes', 12, Colors.black),
           ),
@@ -97,7 +100,37 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: onWillPop,
+      onWillPop: () async {
+        final shouldPop = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: textReg('Are you sure?', 14, Colors.black),
+            content: textReg('Do you want to exit?', 14, Colors.black),
+            actions: <Widget>[
+              FlatButton(
+                onPressed: () {
+                  print(box.read('username'));
+                  Navigator.of(context).pop(false);
+                },
+                child: textBold('No', 12, Colors.black),
+              ),
+              FlatButton(
+                onPressed: () {
+                  print(box.read('username'));
+                  FirebaseFirestore.instance
+                      .collection('Drivers')
+                      .doc(box.read('username'))
+                      .update({'status': 'off'});
+                  Navigator.of(context).pop(true);
+                },
+                child: textBold('Yes', 12, Colors.black),
+              ),
+            ],
+          ),
+        );
+
+        return shouldPop ?? false;
+      },
       child: Scaffold(
         drawer: const MyDrawer(),
         appBar: AppBar(
@@ -214,8 +247,11 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                       child: IconButton(
                                           onPressed: () async {
+                                            Position position = await Geolocator
+                                                .getCurrentPosition(
+                                                    desiredAccuracy:
+                                                        LocationAccuracy.high);
                                             bool serviceEnabled;
-                                            LocationPermission permission;
 
                                             // Test if location services are enabled.
                                             serviceEnabled = await Geolocator
@@ -253,6 +289,15 @@ class _HomePageState extends State<HomePage> {
                                                         ],
                                                       ));
                                             } else if (serviceEnabled) {
+                                              FirebaseFirestore.instance
+                                                  .collection('Drivers')
+                                                  .doc(box.read('username'))
+                                                  .update({
+                                                'locationLatitude':
+                                                    position.latitude,
+                                                'locationLongitude':
+                                                    position.longitude,
+                                              });
                                               myController.getUserData(
                                                   data.docs[index]
                                                       ['contactNumber'],
@@ -273,6 +318,7 @@ class _HomePageState extends State<HomePage> {
                                                   data.docs[index]
                                                       ['profilePicture'],
                                                   data.docs[index]['username']);
+
                                               Navigator.of(context).push(
                                                   MaterialPageRoute(
                                                       builder: (context) =>
