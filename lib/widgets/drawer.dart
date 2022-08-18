@@ -5,6 +5,7 @@ import 'package:easy_ride_driver/pages/operator_page.dart';
 import 'package:easy_ride_driver/pages/payment_page.dart';
 import 'package:easy_ride_driver/pages/profile_page.dart';
 import 'package:easy_ride_driver/screens/home_page.dart';
+
 import 'package:easy_ride_driver/widgets/dialog.dart';
 import 'package:easy_ride_driver/widgets/text.dart';
 import 'package:firebase_auth/firebase_auth.dart';
